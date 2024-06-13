@@ -13,6 +13,6 @@ app_id = "com.mason.janoexample"
 version = "1.0.0"
 
 [dependencies]
-jano = { path = "../jano", features = ["wgpu"] }
+jano = { git = "https://github.com/MasonFeurer/Jano.git", features = ["wgpu"] }
 pollster = "0.3"
 hsv = "0.1.1"

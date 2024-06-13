@@ -71,7 +71,7 @@ To run your app on a connected android device:
 ## App attributes
 Jano-cli will read your projects `Cargo.toml` for some info before building your app.
 It will look at all members of the `[jano]` header in your TOML.
-Here are the recognized options and there meaning:
+Here are the recognized options and their meaning:
 
 - icon : (string)
 
@@ -83,12 +83,14 @@ Here are the recognized options and there meaning:
   
 - app_id : (string)
 
-  The android application ID. Should look like a namespace (com.example.namespace).
+  The android application ID. Should look like a namespace.
   This is uniquely identifies the app on the android device.
+  <p>Example: "com.example.namespace"
 
 - version : (string)
 
   The "version" value for the android APK. Used for versioning the android app on the android device.
+  <p>Example: "0.1.0"
   
 - build_targets : [(string), ...]
 
