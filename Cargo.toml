@@ -1,0 +1,3 @@
+[workspace]
+members = ["example", "jano", "jano-cli"]
+resolver = "2"

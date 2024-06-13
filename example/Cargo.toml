@@ -1,0 +1,18 @@
+[package]
+name = "example"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "main"
+crate-type = ["cdylib"]
+
+[jano]
+name = "Jano Example"
+app_id = "com.mason.janoexample"
+version = "1.0.0"
+
+[dependencies]
+jano = { path = "../jano", features = ["wgpu"] }
+pollster = "0.3"
+hsv = "0.1.1"
