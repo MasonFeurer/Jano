@@ -35,6 +35,21 @@ impl jano::AppState for App {
 }
 ```
 
+And in the `Cargo.toml` file:
+```toml
+[package]
+name = "simple-example"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "main"
+crate-type = ["cdylib"]
+
+[dependencies]
+jano = { git = "https://github.com/MasonFeurer/Jano.git" }
+```
+
 ## Running
 To run a rust project that uses `jano`, you will need to use `jano-cli` (in this repository).
 If you have not already, you will have to build `jano-cli` from source.
@@ -42,30 +57,35 @@ In the future, it will be available on https://crates.io, but that is not today.
 
 # Jano CLI
 ## Building Jano CLI
-To build `jano-cli`, go to the directory `jano-cli` and run
+- Download this repository:
+- Go to `Jano/jano-cli`
+- Use `cargo build`
+
 ```sh
+git clone "https://github.com/MasonFeurer/Jano.git"
+cd Jano/jano-cli
 cargo b -r
 ```
-
-## Using Jano CLI
-Before creating any Android native library, yout Cargo.toml will have to have the following:
-```toml
-[lib]
-name = "main"
-crate-type = ["cdylib"]
+Then, in order for the built `jano-cli` to be usable, you will have to add it to your PATH.
+On Linux Debian, this can be done by putting this line into your `~/.bashrc` file:
+```sh
+export PATH="path_to_the_jano_binary:$PATH"
 ```
 
-If you have built jano-cli from source, you should move the generated binary to somewhere usable, or add it to your path.
-For this example, the `jano-cli` has been moved to your home directory (`~`).
-
-To build your project:
+## Examples
+To build your project: 
 ```sh
-~/jano-cli b
+jano-cli b
 ```
 
-To run your app on a connected android device:
+To build, then run your app on a connected android device:
 ```sh
-~/jano-cli r
+jano-cli r
+```
+
+To skip building, and run your app on a connected android device:
+```sh
+jano-cli r --no-build
 ```
 
 ## App attributes
@@ -84,7 +104,7 @@ Here are the recognized options and their meaning:
 - app_id : (string)
 
   The android application ID. Should look like a namespace.
-  This is uniquely identifies the app on the android device.
+  This uniquely identifies the app on the android device.
   <p>Example: "com.example.namespace"
 
 - version : (string)
@@ -98,7 +118,7 @@ Here are the recognized options and their meaning:
 
 - no_strip : true|false,
 
-  Weather to strip debug symbols from generated native library. Passed to cargo-ndk.
+  Wether to strip debug symbols from the generated native library. Passed to cargo-ndk.
 
 - java\_src\_files : [(string), ...]
 

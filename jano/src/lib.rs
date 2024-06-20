@@ -361,7 +361,7 @@ pub fn set_clipboard_content(value: &str) -> Result<(), String> {
     }
 }
 
-/// An almost 1-1 drop-in-replacement of std::net::TcpStream
+/// A good-enough drop-in-replacement of std::net::TcpStream
 ///
 /// Implemented functions:
 /// - connect

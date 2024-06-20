@@ -22,15 +22,15 @@ mkdir "$HOME/android-sdk"
 # The cmdline-tools will be installed to `cmdline-tools/latest`.
 
 cd "$HOME/android-sdk"
+mkdir cmdline-tools
+cd cmdline-tools
+
 curl "https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip" -o commandlinetools-latest.zip
 unzip -q ./commandlinetools-latest.zip
 rm ./commandlinetools-latest.zip
 
 # unzip created a folder called `cmdline-tools`, we want to rename that to `latest`
 mv cmdline-tools latest
-# we then want to move the `latest` into a new folder, `cmdline-tools`
-mkdir cmdline-tools
-mv latest cmdline-tools
 
 
 # -------- Finish setup of Android SDK --------
@@ -41,8 +41,8 @@ cd cmdline-tools/latest/bin
 ./sdkmanager "platforms;android-31"
 ./sdkmanager "build-tools;30.0.3"
 
-# FIXME: install NDK to ANDROID_HOME/ndk-bundle
-# https://dl.google.com/android/repository/android-ndk-r26b-linux.zip
+# TODO install NDK to ANDROID_HOME/ndk-bundle
+# from https://dl.google.com/android/repository/android-ndk-r26b-linux.zip
 
 # Set Enviornment Variables
 ENV_FILE="~/.bashrc"
@@ -68,7 +68,8 @@ sudo apt install openjdk-17-jre
 # releases are found at: https://gradle.org/releases/
 curl -L "https://services.gradle.org/distributions/gradle-8.8-bin.zip" -o gradle-8.8-bin.zip
 sudo mkdir /opt/gradle
-sudo unzip -d /opt/gradle ~/Downloads/gradle-8.8-bin.zip
+sudo unzip -d /opt/gradle ./gradle-8.8-bin.zip
+rm ./gradle-8.8-bin.zip
 
 # Setup rust for android
 rustup target add aarch64-linux-android armv7-linux-androideabi
