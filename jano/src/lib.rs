@@ -361,15 +361,73 @@ pub fn set_clipboard_content(value: &str) -> Result<(), String> {
     }
 }
 
-// An almost 1-1 drop-in-replacement of std::net::TcpStream
+/// An almost 1-1 drop-in-replacement of std::net::TcpStream
+///
+/// Implemented functions:
+/// - connect
+/// - connect_timeout
+/// - set_read_timeout
+/// - read_timeout
+/// - set_nodelay
+/// - no_delay
+/// - local_address
+///
+/// Missing functions:
+/// - peek
+/// - peer_address
+/// - set_write_timeout
+/// - write_timeout
+/// - set_ttl
+/// - ttl
+/// - take_error
+/// - set_nonblocking
+///
+/// Implemented traits:
+/// - std::io::Write
+/// - std::io::Read
+///
+/// Missing traits:
+/// - AsFd
+/// - AsRawFd
+/// - Into<OwndedFd>
+/// - FromRawFd
+/// - IntoRawFd
+///
+#[derive(Debug)]
 pub struct TcpStream(jni::objects::GlobalRef);
 impl TcpStream {
     pub fn as_raw(&self) -> &jni::objects::GlobalRef {
         &self.0
     }
 
-    pub fn connect(address: &str, port: u32, timeout: Duration) -> std::io::Result<Self> {
+    pub fn connect<A: std::net::ToSocketAddrs>(addr: A) -> std::io::Result<Self> {
+        let mut err = None;
+        for addr in addr.to_socket_addrs()? {
+            let port = addr.port();
+            let addr_str = match addr {
+                std::net::SocketAddr::V4(v4) => v4.ip().to_string(),
+                std::net::SocketAddr::V6(v6) => v6.ip().to_string(),
+            };
+            match Self::connect_single(&addr_str, port) {
+                Ok(v) => return Ok(v),
+                Err(cerr) => err = Some(cerr),
+            }
+        }
+        Err(err.unwrap())
+    }
+
+    pub fn connect_timeout(
+        addr: &std::net::SocketAddr,
+        timeout: Duration,
+    ) -> std::io::Result<Self> {
         use jni::objects::{JObject, JString, JValueGen};
+        let (addr, port) = {
+            let addr_str = match addr {
+                std::net::SocketAddr::V4(v4) => v4.ip().to_string(),
+                std::net::SocketAddr::V6(v6) => v6.ip().to_string(),
+            };
+            (addr_str, addr.port())
+        };
 
         let activity = android().activity_as_ptr();
         let activity = unsafe { JObject::from_raw(activity as jni::sys::jobject) };
@@ -377,7 +435,7 @@ impl TcpStream {
             .unwrap();
         let mut env = vm.get_env().unwrap();
 
-        let address_java_str: JString = match env.new_string(address) {
+        let address_java_str: JString = match env.new_string(addr) {
             Ok(v) => v,
             Err(_) => panic!("JNI jstring construction failed"),
         };
@@ -398,6 +456,43 @@ impl TcpStream {
             Ok(object) => {
                 // static method 'connect' should return a SocketWrapper or null
                 let JValueGen::Object(object) = object else {
+                    panic!("Java function MainActivity.connectNewSocketTimeout() did not return Object")
+                };
+                if object.as_raw() as usize == 0 {
+                    // Object returned was null
+                    Err(get_java_io_err(&mut env).unwrap())?
+                }
+                Ok(Self(env.new_global_ref(object).unwrap()))
+            }
+        }
+    }
+
+    pub fn connect_single(address: &str, port: u16) -> std::io::Result<Self> {
+        use jni::objects::{JObject, JString, JValueGen};
+
+        let activity = android().activity_as_ptr();
+        let activity = unsafe { JObject::from_raw(activity as jni::sys::jobject) };
+        let vm = unsafe { jni::JavaVM::from_raw(android().vm_as_ptr() as *mut jni::sys::JavaVM) }
+            .unwrap();
+        let mut env = vm.get_env().unwrap();
+
+        let address_java_str: JString = match env.new_string(address) {
+            Ok(v) => v,
+            Err(_) => panic!("JNI jstring construction failed"),
+        };
+
+        let activity_class = env.get_object_class(activity).unwrap();
+
+        match env.call_static_method(
+            activity_class,
+            "connectNewSocket",
+            "(Ljava/lang/String;I)Lnodomain/jano/SocketWrapper;",
+            &[(&address_java_str).into(), JValueGen::Int(port as i32)],
+        ) {
+            Err(_) => panic!("JNI call to SocketWrapper.connect() failed"),
+            Ok(object) => {
+                // static method 'connect' should return a SocketWrapper or null
+                let JValueGen::Object(object) = object else {
                     panic!("Java function MainActivity.connectNewSocket() did not return Object")
                 };
                 if object.as_raw() as usize == 0 {
@@ -406,6 +501,79 @@ impl TcpStream {
                 }
                 Ok(Self(env.new_global_ref(object).unwrap()))
             }
+        }
+    }
+
+    pub fn set_read_timeout(&self, dur: Option<Duration>) -> std::io::Result<()> {
+        use jni::objects::JValueGen;
+
+        let vm = unsafe { jni::JavaVM::from_raw(android().vm_as_ptr() as *mut jni::sys::JavaVM) }
+            .unwrap();
+        let mut env = vm.get_env().unwrap();
+
+        let millis = dur.map(|dur| dur.as_millis() as i32).unwrap_or(0);
+
+        match env.call_method(&self.0, "setReadTimeout", "(I)I", &[JValueGen::Int(millis)]) {
+            Err(_err) => panic!("JNI call to SocketWrapper.setReadTimeout failed"),
+            Ok(obj) => match obj {
+                jni::objects::JValueGen::Int(-1i32) => Err(get_java_io_err(&mut env).unwrap()),
+                jni::objects::JValueGen::Int(_) => Ok(()),
+                _ => panic!("Java function SocketWrapper.setReadTimeout returned non-int value"),
+            },
+        }
+    }
+    pub fn read_timeout(&self) -> std::io::Result<Option<Duration>> {
+        let vm = unsafe { jni::JavaVM::from_raw(android().vm_as_ptr() as *mut jni::sys::JavaVM) }
+            .unwrap();
+        let mut env = vm.get_env().unwrap();
+
+        let millis = match env.call_method(&self.0, "readTimeout", "()I", &[]) {
+            Err(_err) => panic!("JNI call to SocketWrapper.readTimeout failed"),
+            Ok(obj) => match obj {
+                jni::objects::JValueGen::Int(-1i32) => Err(get_java_io_err(&mut env).unwrap()),
+                jni::objects::JValueGen::Int(v) => Ok(v),
+                _ => {
+                    panic!("Java function SocketWrapper.readTimeout returned non-int value")
+                }
+            },
+        }?;
+        if millis == 0 {
+            Ok(None)
+        } else {
+            Ok(Some(Duration::from_millis(millis as u64)))
+        }
+    }
+
+    pub fn set_nodelay(&self, nodelay: bool) -> std::io::Result<()> {
+        let vm = unsafe { jni::JavaVM::from_raw(android().vm_as_ptr() as *mut jni::sys::JavaVM) }
+            .unwrap();
+        let mut env = vm.get_env().unwrap();
+
+        match env.call_method(&self.0, "setNodelay", "(I)I", &[nodelay.into()]) {
+            Err(_err) => panic!("JNI call to SocketWrapper.setNodelay failed"),
+            Ok(obj) => match obj {
+                jni::objects::JValueGen::Int(-1i32) => Err(get_java_io_err(&mut env).unwrap()),
+                jni::objects::JValueGen::Int(_) => Ok(()),
+                _ => panic!("Java function SocketWrapper.setNodelay returned non-int value"),
+            },
+        }
+    }
+    pub fn nodelay(&self) -> std::io::Result<bool> {
+        let vm = unsafe { jni::JavaVM::from_raw(android().vm_as_ptr() as *mut jni::sys::JavaVM) }
+            .unwrap();
+        let mut env = vm.get_env().unwrap();
+
+        match env.call_method(&self.0, "getNodelay", "()I", &[]) {
+            Err(_err) => panic!("JNI call to SocketWrapper.getNodelay failed"),
+            Ok(obj) => match obj {
+                jni::objects::JValueGen::Int(-1i32) => Err(get_java_io_err(&mut env).unwrap()),
+                jni::objects::JValueGen::Int(0) => Ok(false),
+                jni::objects::JValueGen::Int(1) => Ok(true),
+                jni::objects::JValueGen::Int(_) => unreachable!(),
+                _ => {
+                    panic!("Java function SocketWrapper.getNodelay returned non-int value")
+                }
+            },
         }
     }
 

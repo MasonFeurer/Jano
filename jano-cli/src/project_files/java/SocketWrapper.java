@@ -30,6 +30,41 @@ public class SocketWrapper {
 		return this.socket.getLocalPort();
 	}
 	
+	public static SocketWrapper connect(String addressStr, int port) {
+		InetSocketAddress address = new InetSocketAddress(addressStr, port);
+		Socket socket = new Socket();
+		
+		try {
+	        socket.connect(address);
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	        SocketWrapper.reportErr(e);
+	        return null;
+	    }
+	    InputStream in = null;
+	    try {
+	        in = socket.getInputStream();
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	        SocketWrapper.reportErr(e);
+	        return null;
+	    }
+	    OutputStream out = null;
+	    try {
+	        out = socket.getOutputStream();
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	        SocketWrapper.reportErr(e);
+	        return null;
+	    }
+	    
+	    SocketWrapper wrapper = new SocketWrapper();
+	    wrapper.socket = socket;
+	    wrapper.in = in;
+	    wrapper.out = out;
+	    return wrapper;
+	}
+	
 	public static SocketWrapper connect(String addressStr, int port, int timeout) {
 		InetSocketAddress address = new InetSocketAddress(addressStr, port);
 		Socket socket = new Socket();
@@ -109,6 +144,46 @@ public class SocketWrapper {
 	public int writeAll(byte[] buf) {
 		// java.io.OutputStream.write() will always write every byte in the buffer (if no exception is thrown)
 		return this.write(buf);
+	}
+	
+	public int setReadTimeout(int millis) {
+		try {
+			this.socket.setSoTimeout(millis);
+			return 0;
+		} catch (IOException e) {
+			e.printStackTrace();
+			SocketWrapper.reportErr(e);
+			return -1;
+		}
+	}
+	public int readTimeout() {
+		try {
+			return this.socket.getSoTimeout();
+		} catch (IOException e) {
+			e.printStackTrace();
+			SocketWrapper.reportErr(e);
+			return -1;
+		}
+	}
+	
+	public int setNodelay(boolean noDelay) {
+		try {
+			this.socket.setTcpNoDelay(noDelay);
+			return 0;
+		} catch (IOException e) {
+			e.printStackTrace();
+			SocketWrapper.reportErr(e);
+			return -1;
+		}
+	}
+	public int getNodelay() {
+		try {
+			return (int)this.socket.getTcpNoDelay();
+		} catch (IOException e) {
+			e.printStackTrace();
+			SocketWrapper.reportErr(e);
+			return -1;
+		}
 	}
 	
 	public int flush(byte[] buf) {

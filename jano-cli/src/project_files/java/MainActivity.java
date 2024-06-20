@@ -109,6 +109,9 @@ public class MainActivity extends GameActivity {
     	}
     } 
     
+    public static SocketWrapper connectNewSocket(String addressStr, int port) {
+    	return SocketWrapper.connect(addressStr, port);
+    }
     public static SocketWrapper connectNewSocket(String addressStr, int port, int timeout) {
     	return SocketWrapper.connect(addressStr, port, timeout);
     }
