@@ -178,7 +178,7 @@ public class SocketWrapper {
 	}
 	public int getNodelay() {
 		try {
-			return (int)this.socket.getTcpNoDelay();
+			return this.socket.getTcpNoDelay() ? 1 : 0;
 		} catch (IOException e) {
 			e.printStackTrace();
 			SocketWrapper.reportErr(e);

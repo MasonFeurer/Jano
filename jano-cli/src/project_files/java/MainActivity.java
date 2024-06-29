@@ -25,6 +25,10 @@ import android.content.Intent;
 
 import android.graphics.Bitmap;
 import java.nio.ByteBuffer;
+
+import java.util.Date;
+import java.util.TimeZone;
+
 // import android.widget.EditText 
 // import android.widget.TextView 
 
@@ -40,6 +44,14 @@ public class MainActivity extends GameActivity {
     }
     public static String getLastErrCode() {
     	return MainActivity.lastErrCode;
+    }
+    
+    // Returns the local UTC offset in seconds.
+    public int localUtcOffset() {
+    	TimeZone tz = TimeZone.getDefault();
+		Date now = new Date();
+		int offsetFromUtc = tz.getOffset(now.getTime()) / 1000;
+		return offsetFromUtc;
     }
     
     native public static void onDisplayInsets(int[] cutouts);

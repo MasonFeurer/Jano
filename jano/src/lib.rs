@@ -217,6 +217,26 @@ pub fn android_main<A: AppState>(temp_android: AndroidApp, mut app: A) {
     }
 }
 
+pub fn local_utc_offset() -> std::io::Result<i32> {
+    use jni::objects::JObject;
+
+    let activity = android().activity_as_ptr();
+    let activity = unsafe { JObject::from_raw(activity as jni::sys::jobject) };
+    let vm =
+        unsafe { jni::JavaVM::from_raw(android().vm_as_ptr() as *mut jni::sys::JavaVM) }.unwrap();
+    let mut env = vm.get_env().unwrap();
+
+    match env.call_method(activity, "localUtcOffset", "()I", &[]) {
+        Err(_err) => panic!("JNI call to SocketWrapper.localUtcOffset failed"),
+        Ok(obj) => match obj {
+            jni::objects::JValueGen::Int(v) => Ok(v),
+            _ => {
+                panic!("Java function SocketWrapper.localUtcOffset returned non-int value")
+            }
+        },
+    }
+}
+
 pub fn get_java_io_err(env: &mut jni::JNIEnv) -> Option<std::io::Error> {
     let activity = android().activity_as_ptr();
     let activity = unsafe { jni::objects::JObject::from_raw(activity as jni::sys::jobject) };
