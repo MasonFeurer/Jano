@@ -1,4 +1,4 @@
-#[cfg(feature = "egui_27")]
+#[cfg(any(feature = "egui_27", feature = "egui_28"))]
 pub mod egui_app;
 #[cfg(any(feature = "wgpu_19", feature = "wgpu_20"))]
 pub mod graphics;
@@ -6,8 +6,12 @@ pub mod input;
 
 #[cfg(feature = "egui_27")]
 pub use egui_27 as egui;
-#[cfg(feature = "egui-wgpu")]
-pub use egui_wgpu;
+#[cfg(feature = "egui_28")]
+pub use egui_28 as egui;
+#[cfg(feature = "egui-wgpu_27")]
+pub use egui_wgpu_27 as egui_wgpu;
+#[cfg(feature = "egui-wgpu_28")]
+pub use egui_wgpu_28 as egui_wgpu;
 #[cfg(feature = "wgpu_19")]
 pub use wgpu_19 as wgpu;
 #[cfg(feature = "wgpu_20")]
@@ -167,14 +171,10 @@ pub trait AppState {
     fn on_picture_taken(&mut self, _pic: Picture) {}
 }
 
-pub fn android_main<A: AppState>(temp_android: AndroidApp, mut app: A) {
-    android_logd_logger::builder()
-        .filter_level(log::LevelFilter::Info)
-        .filter_module("main", log::LevelFilter::Info)
-        .init();
+pub fn android_main<A: AppState>(temp_android: AndroidApp, mut app: A, target_fps: u32) {
     init_android(temp_android);
 
-    let timeout = Duration::from_millis(1000 / 60);
+    let timeout = Duration::from_millis(1000 / target_fps as u64);
     let mut draw_frames = false;
     let mut frame_count = 0;
     let mut last_fps_update = SystemTime::now();
@@ -193,12 +193,6 @@ pub fn android_main<A: AppState>(temp_android: AndroidApp, mut app: A) {
             _ => {}
         });
 
-        let mut picture = PICTURE_TAKEN.lock().unwrap();
-        if picture.is_some() {
-            let pic = picture.take().unwrap();
-            app.on_picture_taken(pic);
-        }
-
         if draw_frames {
             // Update FPS
             frame_count += 1;
@@ -213,6 +207,12 @@ pub fn android_main<A: AppState>(temp_android: AndroidApp, mut app: A) {
                 frame_count = 0;
             }
             app.on_frame(FrameStats { fps });
+        }
+
+        let mut picture = PICTURE_TAKEN.lock().unwrap();
+        if picture.is_some() {
+            let pic = picture.take().unwrap();
+            app.on_picture_taken(pic);
         }
     }
 }
@@ -301,6 +301,23 @@ pub fn take_picture() -> Result<(), String> {
         Ok(_) => {}
         Err(err) => Err(format!(
             "JNI call to MainActivity.takePicture() failed : {err:?}"
+        ))?,
+    }
+    Ok(())
+}
+
+pub fn hide_system_ui() -> Result<(), String> {
+    use jni::objects::JObject;
+
+    let activity = android().activity_as_ptr();
+    let activity = unsafe { JObject::from_raw(activity as jni::sys::jobject) };
+    let vm =
+        unsafe { jni::JavaVM::from_raw(android().vm_as_ptr() as *mut jni::sys::JavaVM) }.unwrap();
+    let mut env = vm.get_env().unwrap();
+    match env.call_method(activity, "hideSystemUI", "()V", &[]) {
+        Ok(_) => {}
+        Err(err) => Err(format!(
+            "JNI call to MainActivity.hideSystemUI() failed : {err:?}"
         ))?,
     }
     Ok(())

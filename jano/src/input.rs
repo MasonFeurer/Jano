@@ -89,7 +89,7 @@ pub struct TouchTranslater {
     pointer_count: u32,
     pointers: Vec<Option<Ptr>>,
     zoom: Option<Zoom>,
-    wants_zoom: bool,
+    pub wants_zoom: bool,
 }
 impl Default for TouchTranslater {
     fn default() -> Self {
@@ -104,7 +104,7 @@ impl Default for TouchTranslater {
             pointer_count: 0,
             pointers: vec![],
             zoom: None,
-            wants_zoom: false,
+            wants_zoom: true,
         }
     }
 }
@@ -149,7 +149,7 @@ impl TouchTranslater {
         }
     }
 
-    fn phase_start(&mut self, idx: usize, pos: Vec2, mut out: impl FnMut(TouchEvent)) {
+    pub fn phase_start(&mut self, idx: usize, pos: Vec2, mut out: impl FnMut(TouchEvent)) {
         self.pointer_count += 1;
         if idx >= self.pointers.len() {
             self.pointers.resize(idx + 1, None);
@@ -191,7 +191,7 @@ impl TouchTranslater {
         }
     }
 
-    fn phase_move(&mut self, idx: usize, pos: Vec2, mut out: impl FnMut(TouchEvent)) {
+    pub fn phase_move(&mut self, idx: usize, pos: Vec2, mut out: impl FnMut(TouchEvent)) {
         self.last_pos = pos;
         if self.pointer_count == 1 {
             out(TouchEvent::PtrMoved(pos / self.scale_factor));
@@ -212,14 +212,17 @@ impl TouchTranslater {
             let [a, b] = [pointers.next().unwrap(), pointers.next().unwrap()];
             let dist = a.pos.distance_squared(b.pos);
             if dist != zoom.start_dist {
-                let delta = (dist - zoom.prev_dist) * 0.0003;
-                out(TouchEvent::Zoom(delta, pos / self.scale_factor));
+                let delta = ((dist - zoom.prev_dist) * 0.0001) + 1.0;
+                out(TouchEvent::Zoom(delta, zoom.anchor / self.scale_factor));
             }
             zoom.prev_dist = dist;
         }
     }
 
-    fn phase_end(&mut self, idx: usize, pos: Vec2, mut out: impl FnMut(TouchEvent)) {
+    pub fn phase_end(&mut self, idx: usize, pos: Vec2, mut out: impl FnMut(TouchEvent)) {
+        if self.pointer_count == 0 {
+            return;
+        }
         out(TouchEvent::PtrReleased(
             PtrButton::Primary,
             pos / self.scale_factor,

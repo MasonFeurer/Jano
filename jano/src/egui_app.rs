@@ -1,13 +1,8 @@
-#[cfg(not(feature = "wgpu_19"))]
-compile_error!("To use `egui_27` feature, you must also use `wgpu_19` feature");
-
-#[cfg(not(feature = "egui-wgpu"))]
-compile_error!("To use `egui_27` feature, you must also use `egui-wgpu` feature");
-
 #[cfg(not(feature = "pollster"))]
 compile_error!("To use `egui_27` feature, you must also use `pollster` feature");
 
 use super::{egui, wgpu};
+use crate::egui_wgpu;
 use crate::graphics::Gpu;
 use crate::{
     android, scale_factor, translate_input_event, AppState, FrameStats, Picture, PtrButton,
@@ -159,7 +154,7 @@ impl<A: EguiApp> AppState for EguiAppState<A> {
             };
             while iter.next(|event| {
                 translate_input_event(event, &mut input.translater, |touch_event| {
-                    input.raw.events.push(touch_event.into())
+                    input.raw.events.extend(Vec::<_>::from(touch_event))
                 })
             }) {}
         }
@@ -264,9 +259,9 @@ impl From<PtrButton> for egui::PointerButton {
         }
     }
 }
-impl From<TouchEvent> for egui::Event {
+impl From<TouchEvent> for Vec<egui::Event> {
     fn from(ptr: TouchEvent) -> Self {
-        match ptr {
+        let first = match ptr {
             TouchEvent::KeyBackspace { pressed } => egui::Event::Key {
                 key: egui::Key::Backspace,
                 physical_key: None,
@@ -289,9 +284,19 @@ impl From<TouchEvent> for egui::Event {
                 modifiers: Default::default(),
             },
             TouchEvent::PtrLeft => egui::Event::PointerGone,
-            TouchEvent::Zoom(factor, _pos) => egui::Event::Zoom(factor),
-            TouchEvent::Scroll(delta) => egui::Event::Scroll(egui::vec2(delta.x, delta.y)),
-        }
+            TouchEvent::Zoom(factor, pos) => {
+                return vec![
+                    egui::Event::PointerMoved(egui::pos2(pos.x, pos.y)),
+                    egui::Event::Zoom(factor),
+                ]
+            }
+            TouchEvent::Scroll(delta) => egui::Event::MouseWheel {
+                unit: egui::MouseWheelUnit::Point,
+                delta: egui::vec2(delta.x, delta.y),
+                modifiers: Default::default(),
+            },
+        };
+        vec![first]
     }
 }
 
@@ -318,6 +323,7 @@ impl EguiInput {
     }
 
     pub fn update(&mut self) {
-        self.translater.update(|e| self.raw.events.push(e.into()));
+        self.translater
+            .update(|e| self.raw.events.extend(Vec::<_>::from(e)));
     }
 }

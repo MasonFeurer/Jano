@@ -1,11 +1,11 @@
 use std::{fs, io};
 
 macro_rules! mv {
-    ($name:literal,$q:literal,$r:expr,$dst:expr) => {{
+    ($name:literal,$dst:expr, $($q:literal,$r:expr)*) => {{
         println!("Writing file {:?} to {:?}", $name, $dst);
         fs::write(
             format!("{}/{}", $dst, $name),
-            include_str!(concat!("project_files/", $name)).replace($q, $r),
+            include_str!(concat!("project_files/", $name))$(.replace($q, $r))*,
         )
     }};
     ($name:literal,$dst:expr) => {{
@@ -15,11 +15,11 @@ macro_rules! mv {
             include_bytes!(concat!("project_files/", $name)),
         )
     }};
-    ($dir:literal,$name:literal,$q:literal,$r:expr,$dst:expr) => {{
+    ($dir:literal,$name:literal,$dst:expr, $($q:literal,$r:expr)*) => {{
         println!("Writing file {:?} to {:?}", $name, $dst);
         fs::write(
             format!("{}/{}", $dst, $name),
-            include_str!(concat!("project_files/", $dir, "/", $name)).replace($q, $r),
+            include_str!(concat!("project_files/", $dir, "/", $name))$(.replace($q, $r))*,
         )
     }};
     ($dir:literal,$name:literal,$dst:expr) => {{
@@ -31,7 +31,12 @@ macro_rules! mv {
     }};
 }
 
-pub fn create_android_project(path: &str, name: &str, app_id: &str) -> io::Result<()> {
+pub fn create_android_project(
+    path: &str,
+    name: &str,
+    app_id: &str,
+    orientation: &str,
+) -> io::Result<()> {
     let app = format!("{path}/app");
     let main = format!("{app}/src/main");
     let java_src = format!("{main}/java/nodomain/jano");
@@ -45,9 +50,16 @@ pub fn create_android_project(path: &str, name: &str, app_id: &str) -> io::Resul
     mv!("build.gradle", &path)?;
     mv!("settings.gradle", &path)?;
     mv!("gradle.properties", &path)?;
-    mv!("app", "build.gradle", "{app_id}", app_id, &app)?;
+    mv!("app", "build.gradle", &app, "{app_id}", app_id)?;
     mv!("proguard-rules.pro", &app)?;
-    mv!("AndroidManifest.xml", "{app_name}", name, &main)?;
+    mv!(
+        "AndroidManifest.xml",
+        &main,
+        "{app_name}",
+        name
+        "{orientation}",
+        orientation
+    )?;
     mv!("java", "MainActivity.java", &java_src)?;
     mv!("java", "SocketWrapper.java", &java_src)?;
     Ok(())

@@ -10,7 +10,7 @@
         android:label="{app_name}"
         android:theme="@style/Theme.RustTemplate">
         <activity
-            android:screenOrientation="portrait"
+            android:screenOrientation="{orientation}"
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:exported="true">

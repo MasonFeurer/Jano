@@ -5,21 +5,22 @@ edition = "2021"
 
 [features]
 wgpu = ["wgpu_20"]
-egui = ["egui_27", "wgpu_19", "egui-wgpu", "pollster"]
+egui = ["egui_28", "wgpu_20", "egui-wgpu_28", "pollster"]
 
 [dependencies]
-ndk = { version = "0.8", features = ["rwh_05"] }
+ndk = { version = "0.8", features = ["rwh_06"] }
 ndk-sys = "0.5.0"
 android-activity = { version = "0.5", features = ["game-activity"] }
 jni = "0.21"
-android-logd-logger = "0.2"
 log = "0.4"
 glam = { version = "0.27", features = ["serde"] }
 
 serde = { optional = true, version = "1.0", features = ["serde_derive"] }
 
 egui_27 = { optional = true, package = "egui", version = "0.27" }
+egui_28 = { optional = true, package = "egui", version = "0.28" }
 wgpu_19 = { optional = true, package = "wgpu", version = "0.19" }
 wgpu_20 = { optional = true, package = "wgpu", version = "0.20" }
-egui-wgpu = { optional = true, version = "0.27" }
+egui-wgpu_27 = { optional = true, package = "egui-wgpu", version = "0.27" }
+egui-wgpu_28 = { optional = true, package = "egui-wgpu", version = "0.28" }
 pollster = { optional = true, version = "0.3" }

@@ -55,7 +55,6 @@ public class MainActivity extends GameActivity {
     }
     
     native public static void onDisplayInsets(int[] cutouts);
-	
 	native public static void onPictureTaken(byte[] data, int w, int h);
    	
     // ArrayList<EditText> visibleTextFields = new ArrayList();
@@ -205,17 +204,17 @@ public class MainActivity extends GameActivity {
         });
     }
 
-    private void hideSystemUI() {
+    public void hideSystemUI() {
         // This will put the game behind any cutouts and waterfalls on devices which have
         // them, so the corresponding insets will be non-zero.
         if (VERSION.SDK_INT >= VERSION_CODES.P) {
-            getWindow().getAttributes().layoutInDisplayCutoutMode
+            this.getWindow().getAttributes().layoutInDisplayCutoutMode
                     = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
         }
         // From API 30 onwards, this is the recommended way to hide the system UI, rather than
         // using View.setSystemUiVisibility.
-        View decorView = getWindow().getDecorView();
-        WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(),
+        View decorView = this.getWindow().getDecorView();
+        WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(this.getWindow(),
                 decorView);
         controller.hide(WindowInsetsCompat.Type.systemBars());
         controller.hide(WindowInsetsCompat.Type.displayCutout());
@@ -227,15 +226,13 @@ public class MainActivity extends GameActivity {
     protected void onCreate(Bundle savedInstanceState) {
         // When true, the app will fit inside any system UI windows.
         // When false, we render behind any system UI windows.
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
-        // hideSystemUI();
+        // WindowCompat.setDecorFitsSystemWindows(this.getWindow(), true);
         createInsetsListener();
         super.onCreate(savedInstanceState);
     }
 
     protected void onResume() {
         super.onResume();
-        // hideSystemUI();
 
         // View view = this.
         // view.setFocusable(true);

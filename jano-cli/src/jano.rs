@@ -25,6 +25,10 @@ pub struct Manifest {
     /// Paths to Java files to be copied into the java source directory of the created Java Application.
     /// Can be used to override MainActivity.java.
     java_src_files: Vec<String>,
+    /// The orientation the app should use.
+    /// An empty string defaults to "unspecified", which will allow the app to use any orientation.
+    /// Valid options are listed here: https://developer.android.com/reference/androidx/browser/trusted/ScreenOrientation
+    orientation: String,
 }
 impl Manifest {
     pub fn set_defaults(&mut self) {
@@ -36,6 +40,9 @@ impl Manifest {
         }
         if self.version.is_empty() {
             self.version = "0.1.0".into();
+        }
+        if self.orientation.is_empty() {
+            self.orientation = "unspecified".into();
         }
     }
 }
@@ -124,6 +131,7 @@ impl<'a> Jano<'a> {
             &format!("{}/android", self.root()),
             &self.manifest.name,
             &self.manifest.app_id,
+            &self.manifest.orientation,
         )
         .map_err(|err| err.to_string())?;
 
