@@ -22,6 +22,7 @@ import android.content.ClipboardManager;
 import android.content.ClipDescription;
 import android.content.ClipData;
 import android.content.Intent;
+import android.widget.Toast;
 
 import android.graphics.Bitmap;
 import java.nio.ByteBuffer;
@@ -106,13 +107,38 @@ public class MainActivity extends GameActivity {
 		}
     }
     
+    public void showToast(String message, boolean longDuration) {
+    	try {
+    		int duration;
+	    	if (longDuration) {
+	    		duration = Toast.LENGTH_LONG;
+	    	} else {
+	    		duration = Toast.LENGTH_SHORT;
+	    	}
+	    	Context ctx = this;
+	    	
+	    	runOnUiThread(new Runnable() {
+				public void run() {
+					Toast toast = Toast.makeText(ctx, message, duration);
+					toast.show();
+				}
+			 });
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    	}
+    }
+    
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     	super.onActivityResult(requestCode, resultCode, data); 
     	if (requestCode == 123 && data != null) {
     		System.out.println("setting recievedImage");
-    		Bitmap bitmap = (Bitmap) data.getExtras().get("data");
-    		bitmap.setConfig(Bitmap.Config.ARGB_8888);
+    		Bitmap bitmapOriginal = (Bitmap) data.getExtras().get("data");
+    		Bitmap bitmap = bitmapOriginal.copy(Bitmap.Config.ARGB_8888, true);
+    		if (bitmap == null) {
+    			System.err.println("Failed to make copy of image bitmap");
+    			return;
+    		}
     		byte[] rawBuf = new byte[bitmap.getByteCount()];
     		ByteBuffer buf = ByteBuffer.wrap(rawBuf);
     		bitmap.copyPixelsToBuffer(buf);

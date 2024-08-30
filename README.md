@@ -39,7 +39,7 @@ And in the `Cargo.toml` file:
 ```toml
 [package]
 name = "simple-example"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
 
 [lib]

@@ -56,10 +56,8 @@ enum SubCmd {
     },
     /// Print the version of jano-cli
     Version,
-    /// Check versions of all dependencies of jano-cli and report any missing.
-    CheckDeps,
     /// Install any missing dependencies for jano-cli.
-    FixDeps,
+    Doctor,
 }
 
 fn main() -> Result<(), String> {
@@ -103,14 +101,10 @@ fn main() -> Result<(), String> {
             jano.run(no_logcat, device.as_deref())
         }
         SubCmd::Version => {
-            println!("jano - 0.1.0");
+            println!("jano - 0.0.1");
             Ok(())
         }
-        SubCmd::CheckDeps => {
-            println!("Currently not implemented");
-            Ok(())
-        }
-        SubCmd::FixDeps => {
+        SubCmd::Doctor => {
             println!("Currently not implemented");
             Ok(())
         }

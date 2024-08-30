@@ -341,6 +341,34 @@ pub fn set_keyboard_visibility(vis: bool) -> Result<(), String> {
     Ok(())
 }
 
+pub fn show_toast(msg: impl Into<String>, long_dur: bool) -> Result<(), String> {
+    let msg = msg.into();
+    use jni::objects::{JObject, JString};
+
+    let activity = android().activity_as_ptr();
+    let activity = unsafe { JObject::from_raw(activity as jni::sys::jobject) };
+    let vm =
+        unsafe { jni::JavaVM::from_raw(android().vm_as_ptr() as *mut jni::sys::JavaVM) }.unwrap();
+    let mut env = vm.get_env().unwrap();
+
+    let msg_jstr: JString = match env.new_string(msg) {
+        Ok(v) => v,
+        Err(_) => Err(String::from("JNI jstring creation failed"))?,
+    };
+
+    if let Err(err) = env.call_method(
+        activity,
+        "showToast",
+        "(Ljava/lang/String;Z)V",
+        &[(&msg_jstr).into(), long_dur.into()],
+    ) {
+        Err(format!(
+            "JNI call to MainActivity.showToast() failed : {err:?}"
+        ))?
+    }
+    Ok(())
+}
+
 pub fn get_clipboard_content() -> Result<String, String> {
     use jni::objects::{JObject, JString, JValueGen};
 

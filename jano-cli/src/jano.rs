@@ -39,7 +39,7 @@ impl Manifest {
             self.app_id = "unnamed.java.app".into();
         }
         if self.version.is_empty() {
-            self.version = "0.1.0".into();
+            self.version = "0.0.1".into();
         }
         if self.orientation.is_empty() {
             self.orientation = "unspecified".into();
